@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Stock y Pedidos — Punto Horno</title>
+  
+  <!-- Fuentes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500;600&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Librería SweetAlert2 (Modals de confirmación) -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Librería Toastify JS (Notificaciones flotantes) -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <div>
+      <span class="eyebrow">STOCK Y PEDIDOS</span>
+      <h1>Punto Horno</h1>
+    </div>
+    <div class="header-clock" id="reloj-sistema">--:--:--</div>
+  </header>
+
+  <div class="layout">
+    
+    <!-- COLUMNA 1: STOCK & REPOSICIÓN -->
+    <section class="panel panel-stock">
+      <h2>Stock</h2>
+      
+      <div class="stock-list" id="lista-stock">
+        <!-- Renderizado dinámico de productos -->
+      </div>
+
+      <div class="admin-stock-box">
+        <h3>Cargar / Reponer Stock</h3>
+        <form class="form-admin" id="form-admin-stock">
+          <div class="field-group">
+            <label for="admin-select-producto">Seleccionar Producto</label>
+
+            <select id="admin-select-producto">
+              <option value="nuevo">+ Crear Nuevo Producto</option>
+            </select>
+          </div>
+
+          <div id="campos-nuevo-producto" class="campos-nuevo">
+            <div class="field-group">
+              <label for="admin-nombre">Nombre</label>
+              <input type="text" id="admin-nombre" placeholder="Ej: Muzzarella, Fugazzeta...">
+            </div>
+
+            <div class="field-group">
+              <label for="admin-categoria">Categoría</label>
+              <select id="admin-categoria">
+                <option value="Pizza armada">Pizza armada</option>
+                <option value="Prepizza">Prepizza</option>
+                <option value="Otros">Otros</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label for="admin-tamano">Tamaño</label>
+              <select id="admin-tamano">
+                <option value="Grande">Grande</option>
+                <option value="Chico">Chico</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row-cantidad">
+            <div class="field-group">
+              <label for="admin-costo">Costo ($)</label>
+              <input type="number" id="admin-costo" step="0.01" min="0" placeholder="0.00">
+            </div>
+            <div class="field-group">
+              <label for="admin-ganancia">% Ganancia</label>
+              <input type="number" id="admin-ganancia" step="1" min="0" placeholder="Ej: 50">
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="admin-precio-final">Precio Venta Calculado ($)</label>
+            <input type="number" id="admin-precio-final" placeholder="0.00" readonly>
+          </div>
+
+          <div class="row-cantidad">
+            <div class="field-group">
+              <label for="admin-stock-actual">Stock Unidades</label>
+              <input type="number" id="admin-stock-actual" min="0" placeholder="0" required>
+            </div>
+            <div class="field-group">
+              <label for="admin-stock-minimo">Mínimo Crítico</label>
+              <input type="number" id="admin-stock-minimo" min="1" value="3" required>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full">Guardar en Sistema</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- COLUMNA 2: TICKET & REGISTRO DE PEDIDOS -->
+    <section class="panel panel-pedido">
+      <h2>Armar Comanda / Pedido</h2>
+      
+      <form class="form-agregar" id="form-item-pedido">
+        <div class="field-group group-producto">
+          <label for="select-producto-ticket">Producto</label>
+          <select id="select-producto-ticket" required>
+            <option value="">Cargando productos...</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="input-cant-ticket">Cant.</label>
+          <input type="number" id="input-cant-ticket" value="1" min="1" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-add">+</button>
+      </form>
+
+      <hr class="divider">
+
+      <div class="ticket-actual">
+        <h3>Ítems en esta Comanda</h3>
+        <ul id="lista-ticket-items" class="ticket-items">
+          <li class="ticket-vacio">No hay productos agregados</li>
+        </ul>
+
+        <div class="datos-cliente">
+          <div class="field-group">
+            <label for="cliente-nombre">Cliente</label>
+            <input type="text" id="cliente-nombre" placeholder="Nombre de cliente">
+          </div>
+          <div class="field-group">
+            <label for="cliente-direccion">Dirección / Mesa</label>
+            <input type="text" id="cliente-direccion" placeholder="Ej: Mesa 4 o Av. Mayo 123">
+          </div>
+        </div>
+
+        <div class="datos-cliente">
+          <div class="field-group">
+            <label for="ticket-descuento">% Descuento</label>
+            <input type="number" id="ticket-descuento" min="0" max="100" value="0" step="1">
+          </div>
+          <div class="field-group">
+            <label for="ticket-impuesto">% Impuesto / Recargo</label>
+            <input type="number" id="ticket-impuesto" min="0" max="100" value="0" step="1">
+          </div>
+        </div>
+
+        <div class="admin-stock-box" id="resumen-totales-ticket" style="margin-top:12px; padding:10px;">
+          <div class="stock-item-info">
+            <span>Subtotal:</span>
+            <strong id="lbl-subtotal">$0.00</strong>
+          </div>
+          <div class="stock-item-info" style="color: var(--tomato);">
+            <span>Descuento:</span>
+            <strong id="lbl-descuento">-$0.00 (0%)</strong>
+          </div>
+          <div class="stock-item-info" style="color: var(--steel);">
+            <span>Impuesto/Envío:</span>
+            <strong id="lbl-impuesto">+$0.00 (0%)</strong>
+          </div>
+          <hr class="divider" style="margin: 6px 0;">
+          <div class="stock-item-info" style="font-size: 16px;">
+            <span style="color: var(--cream);">TOTAL FINAL:</span>
+            <strong id="lbl-total-final" style="color: var(--cream);">$0.00</strong>
+          </div>
+        </div>
+
+        <button type="button" id="btn-confirmar-pedido" class="btn btn-confirmar">Confirmar y Enviar a Cocina</button>
+        <button type="button" id="btn-imprimir-ticket" class="btn btn-secundario btn-full" style="margin-top: 8px;">🖨️ Imprimir Ticket / Comanda</button>
+      </div>
+    </section>
+
+    <!-- COLUMNA 3: COMANDAS ACTIVAS EN COCINA -->
+    <section class="panel panel-comandas">
+      <div class="panel-activos-header">
+        <h2>Comandas Activas</h2>
+        <button id="btn-sincronizar" class="btn btn-secundario" title="Actualiza los datos desde la hoja de cálculo de Google">🔄 Sincronizar</button>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin: 10px 0;">
+        <button id="btn-imprimir-resumen" class="btn btn-secundario btn-full" style="font-size: 12px; padding: 6px 10px;">📊 Imprimir Totales del Día</button>
+        <button id="btn-limpiar-entregadas" class="btn btn-secundario btn-full" style="font-size: 12px; padding: 6px 10px; color: var(--tomato);">🧹 Limpiar Entregadas</button>
+      </div>
+
+      <div class="pedidos-list" id="lista-comandas">
+        <!-- Renderizado dinámico de pedidos activos -->
+      </div>
+    </section>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
